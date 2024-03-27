@@ -284,16 +284,15 @@ def main():
 		# raw_im = raw_im[int(720-(258/2)):int(720+(258/2)),int(1720-(178/2)):int(1720+(178/2)),:]
 		# cv2.imshow("frame", raw_im)
 		webcam.cap_images()
-		cv2.imshow('frame', webcam.im_frame)
-		print(webcam.im_frame.shape)
+		# cv2.imshow('frame', webcam.im_frame)
+		# print(webcam.im_frame.dtype)
 		img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame,0,1))
-		img = pygame.transform.scale(img, (160, 90))
+		img = pygame.transform.scale(img, (webcam.im_frame.shape[1]*0.5, webcam.im_frame.shape[0]*0.5))
 		screen.blit(img,img.get_rect())
 
 		pygame.display.update()
 		
 		clock.tick(FPS)
-		print('ticked')
 
 
 if __name__ == "__main__":
