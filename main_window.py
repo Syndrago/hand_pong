@@ -94,10 +94,10 @@ class Ball:
 		# it results in a reflection
 		if self.posy <= 0 or self.posy >= HEIGHT:
 			self.yFac *= -1
-		if self.posx <= 0: # and self.firstTime:
+		if self.posx <= 0:
 			self.xFac *= -1
 			return 0
-		elif self.posx >= WIDTH: #and self.firstTime:
+		elif self.posx >= WIDTH:
 			return -1
 		else:
 			return 0
@@ -107,7 +107,6 @@ class Ball:
 		self.posx = WIDTH//2
 		self.posy = HEIGHT//2
 		self.xFac *= -1
-		self.firstTime = 1
 		self.speed = 7
 
 	# Used to reflect the ball along the X-axis
@@ -266,7 +265,8 @@ def main():
 		# +1 -> Geek_2 has scored
 		# 0 -> None of them scored
 		if point == -1:
-			geek2Score -= 1
+			if geek2Score > 0:
+				geek2Score -= 1
 		elif point == 1:
 			geek2Score += 1
 
@@ -284,7 +284,7 @@ def main():
 		# Displaying the scores of the players
 		# geek1.displayScore("Geek_1 : ", 
 		# 				geek1Score, 100, 20, WHITE)
-		geek2.displayScore("Geek_2 : ", 
+		geek2.displayScore("Score : ", 
 						geek2Score, WIDTH-100, 20, WHITE)
 		img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
 		img.set_colorkey(img.get_colorkey())
