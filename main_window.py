@@ -80,7 +80,6 @@ class Ball:
 		self.yFac = -1
 		self.ball = pygame.draw.circle(
 			screen, self.color, (self.posx, self.posy), self.radius)
-		# self.firstTime = 1
 
 	def display(self):
 		self.ball = pygame.draw.circle(
@@ -96,24 +95,29 @@ class Ball:
 		if self.posy <= 0 or self.posy >= HEIGHT:
 			self.yFac *= -1
 		if self.posx <= 0: # and self.firstTime:
-			# self.firstTime = 0
 			self.xFac *= -1
-			# return 1
+			return 0
 		elif self.posx >= WIDTH: #and self.firstTime:
-			# self.firstTime = 0
 			return -1
 		else:
 			return 0
+		
 
 	def reset(self):
 		self.posx = WIDTH//2
 		self.posy = HEIGHT//2
 		self.xFac *= -1
 		self.firstTime = 1
+		self.speed = 7
 
 	# Used to reflect the ball along the X-axis
-	def hit(self):
-		self.xFac *= -1
+	def hit(self, striker_xpos):
+		self.speed += 1.5
+		# Reflect ball in Y if ball hits striker corner
+		if striker_xpos < self.posx:
+			self.yFac *= -1
+		else:
+			self.xFac *= -1
 
 	def getRect(self):
 		return self.ball
@@ -230,25 +234,29 @@ def main():
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				running = False
-			# if event.type == pygame.KEYDOWN:
-			# 	if event.key == pygame.K_UP:
-			# 		geek2YFac = -1
-			# 	if event.key == pygame.K_DOWN:
-			# 		geek2YFac = 1
-			# if event.type == pygame.KEYUP:
-			# 	if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-			# 		geek2YFac = 0
-		if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
-			geek2YFac = 1
-		elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
-			geek2YFac = -1
-		else:
-			geek2YFac = 0
+			# For keyboard control
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_UP:
+					geek2YFac = -1
+				if event.key == pygame.K_DOWN:
+					geek2YFac = 1
+			if event.type == pygame.KEYUP:
+				if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+					geek2YFac = 0
+				
+		# Hand gesture controls
+		# if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
+		# 	geek2YFac = 1
+		# elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
+		# 	geek2YFac = -1
+		# else:
+		# 	geek2YFac = 0
 
 		# Collision detection
 		for geek in listOfGeeks:
 			if pygame.Rect.colliderect(ball.getRect(), geek.getRect()):
-				ball.hit()
+				ball.hit(geek.posx)
+				geek2Score += 1
 
 		# Updating the objects
 		geek2.update(geek2YFac)
