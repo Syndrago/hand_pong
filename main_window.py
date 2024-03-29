@@ -233,23 +233,23 @@ def main():
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				running = False
-			# For keyboard control
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_UP:
-					geek2YFac = -1
-				if event.key == pygame.K_DOWN:
-					geek2YFac = 1
-			if event.type == pygame.KEYUP:
-				if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-					geek2YFac = 0
+			# # For keyboard control
+			# if event.type == pygame.KEYDOWN:
+			# 	if event.key == pygame.K_UP:
+			# 		geek2YFac = -1
+			# 	if event.key == pygame.K_DOWN:
+			# 		geek2YFac = 1
+			# if event.type == pygame.KEYUP:
+			# 	if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+			# 		geek2YFac = 0
 				
 		# Hand gesture controls
-		# if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
-		# 	geek2YFac = 1
-		# elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
-		# 	geek2YFac = -1
-		# else:
-		# 	geek2YFac = 0
+		if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
+			geek2YFac = 1
+		elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
+			geek2YFac = -1
+		else:
+			geek2YFac = 0
 
 		# Collision detection
 		for geek in listOfGeeks:
