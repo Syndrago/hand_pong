@@ -278,7 +278,7 @@ def main():
 		# 				geek1Score, 100, 20, WHITE)
 		geek2.displayScore("Geek_2 : ", 
 						geek2Score, WIDTH-100, 20, WHITE)
-		img = pygame.pixelcopy.make_surface(np.rot90(webcam.im_frame))
+		img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
 		img.set_colorkey(img.get_colorkey())
 		img = pygame.transform.scale(img, (webcam.im_frame.shape[1]*0.5, webcam.im_frame.shape[0]*0.5))
 		img.set_alpha(overlay_opacity)
