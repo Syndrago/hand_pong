@@ -15,7 +15,9 @@ GREEN = (0, 255, 0)
 # Basic parameters of the screen
 WIDTH, HEIGHT = 900, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pong")
+pygame.display.set_caption("Hand Pong")
+move_pixel_buffer = 25
+overlay_opacity = 75
 
 clock = pygame.time.Clock() 
 FPS = 30
@@ -133,6 +135,7 @@ class Webcam:
 		self.kernel = np.ones((20,20),np.uint8)
 		self.im_frame = self.cap.read()
 		self.max_index = 0
+		self.y_pos = 0
 
 	def cap_images(self):
  
@@ -194,14 +197,9 @@ class Webcam:
 			# Display the resulting frame
 			# cv2.imshow('frame',frame)
 			self.im_frame = frame
+			self.y_pos = y2
 
 	def cam_stop(self):
-		# If "q" is pressed on the keyboard, 
-		# exit this loop
-		if cv2.waitKey(1) & 0xFF == ord('q'):
-			# break
-			pass
- 
 		# Close down the video stream
 		self.cap.release()
 		cv2.destroyAllWindows()
@@ -227,19 +225,25 @@ def main():
 
 	while running:
 		screen.fill(BLACK)
-
+		webcam.cap_images()
 		# Event handling
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				running = False
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_UP:
-					geek2YFac = -1
-				if event.key == pygame.K_DOWN:
-					geek2YFac = 1
-			if event.type == pygame.KEYUP:
-				if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-					geek2YFac = 0
+			# if event.type == pygame.KEYDOWN:
+			# 	if event.key == pygame.K_UP:
+			# 		geek2YFac = -1
+			# 	if event.key == pygame.K_DOWN:
+			# 		geek2YFac = 1
+			# if event.type == pygame.KEYUP:
+			# 	if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+			# 		geek2YFac = 0
+		if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
+			geek2YFac = 1
+		elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
+			geek2YFac = -1
+		else:
+			geek2YFac = 0
 
 		# Collision detection
 		for geek in listOfGeeks:
@@ -247,7 +251,6 @@ def main():
 				ball.hit()
 
 		# Updating the objects
-		# geek1.update(geek1YFac)
 		geek2.update(geek2YFac)
 		point = ball.update()
 
@@ -255,7 +258,7 @@ def main():
 		# +1 -> Geek_2 has scored
 		# 0 -> None of them scored
 		if point == -1:
-			pass
+			geek2Score -= 1
 		elif point == 1:
 			geek2Score += 1
 
@@ -275,17 +278,10 @@ def main():
 		# 				geek1Score, 100, 20, WHITE)
 		geek2.displayScore("Geek_2 : ", 
 						geek2Score, WIDTH-100, 20, WHITE)
-		# raw_im = cv2.imread("background.png")
-		# raw_im = raw_im[int(720-(258/2)):int(720+(258/2)),int(1720-(178/2)):int(1720+(178/2)),:]
-		# cv2.imshow("frame", raw_im)
-		webcam.cap_images()
-		# cv2.imshow('frame', webcam.im_frame)
-		# print(webcam.im_frame.dtype, webcam.im_frame.shape)
-		# img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame,0,1))
 		img = pygame.pixelcopy.make_surface(np.rot90(webcam.im_frame))
 		img.set_colorkey(img.get_colorkey())
 		img = pygame.transform.scale(img, (webcam.im_frame.shape[1]*0.5, webcam.im_frame.shape[0]*0.5))
-		img.set_alpha(75)
+		img.set_alpha(overlay_opacity)
 		screen.blit(img,img.get_rect())
 
 		pygame.display.update()
