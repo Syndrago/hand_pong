@@ -132,6 +132,7 @@ class Webcam:
 		# e.g. instead of 20,20 you can try 30,30.
 		self.kernel = np.ones((20,20),np.uint8)
 		self.im_frame = self.cap.read()
+		self.max_index = 0
 
 	def cap_images(self):
  
@@ -163,42 +164,36 @@ class Webcam:
 		if len(areas) < 1:
 
 			# Display the resulting frame
-			# cv2.imshow('frame',frame)
-
-			# If "q" is pressed on the keyboard, 
-			# exit this loop
-			if cv2.waitKey(1) & 0xFF == ord('q'):
-				# break
-				pass
-
+			# cv2.imshow('frame',frame):
+				
 			# Go to the top of the while loop
 			self.im_frame = frame
-			return
-
+				
 		else:
 			# Find the largest moving object in the image
-			max_index = np.argmax(areas)
+			self.max_index = np.argmax(areas)
 
-		# Draw the bounding box
-		# print(max_index)
-		# cnt = contours[max_index]
-		# x,y,w,h = cv2.boundingRect(cnt)
-		# frame = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),3).shape
+			# Draw the bounding box
+			# print(self.max_index)
+			cnt = contours[self.max_index]
+			x,y,w,h = cv2.boundingRect(cnt)
+			frame = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),3)
 
-		# # Draw circle in the center of the bounding box
-		# x2 = x + int(w/2)
-		# y2 = y + int(h/2)
-		# frame = cv2.circle(frame,(x2,y2),4,(0,255,0),-1)
+			# Draw circle in the center of the bounding box
+			x2 = x + int(w/2)
+			y2 = y + int(h/2)
+			frame = cv2.circle(frame,(x2,y2),4,(0,255,0),-1)
 
-		# # Print the centroid coordinates (we'll use the center of the
-		# # bounding box) on the image
-		# text = "x: " + str(x2) + ", y: " + str(y2)
-		# frame = cv2.putText(frame, text, (x2 - 10, y2 - 10),
-		# 	cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-		
-		# Display the resulting frame
-		# cv2.imshow('frame',frame)
-		self.im_frame = frame
+			# Print the centroid coordinates (we'll use the center of the
+			# bounding box) on the image
+			text = "x: " + str(x2) + ", y: " + str(y2)
+			# print(text)
+			frame = cv2.putText(frame, text, (x2 - 10, y2 - 10),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+			
+			# Display the resulting frame
+			# cv2.imshow('frame',frame)
+			self.im_frame = frame
 
 	def cam_stop(self):
 		# If "q" is pressed on the keyboard, 
@@ -285,9 +280,12 @@ def main():
 		# cv2.imshow("frame", raw_im)
 		webcam.cap_images()
 		# cv2.imshow('frame', webcam.im_frame)
-		# print(webcam.im_frame.dtype)
-		img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame,0,1))
+		# print(webcam.im_frame.dtype, webcam.im_frame.shape)
+		# img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame,0,1))
+		img = pygame.pixelcopy.make_surface(np.rot90(webcam.im_frame))
+		img.set_colorkey(img.get_colorkey())
 		img = pygame.transform.scale(img, (webcam.im_frame.shape[1]*0.5, webcam.im_frame.shape[0]*0.5))
+		img.set_alpha(75)
 		screen.blit(img,img.get_rect())
 
 		pygame.display.update()
