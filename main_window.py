@@ -139,7 +139,7 @@ class Webcam:
 
     def cap_images(self):
         ret, frame = self.cap.read()
-		
+
         fg_mask = self.back_sub.apply(frame)
         fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, self.kernel)
         fg_mask = cv2.medianBlur(fg_mask, 5) 
@@ -169,85 +169,55 @@ class Webcam:
 
 # Game Manager
 def main():
-	running = True
+    running = True
+    paddle = Paddle(WIDTH - 30, 0, 10, 100, 10, GREEN)
+    ball = Ball(WIDTH // 2, HEIGHT // 2, 7, 7, WHITE)
+    webcam = Webcam(0)
+    player_score = 0
+    player_YFac = 0
 
-	# Defining the objects
-	paddle = Paddle(WIDTH-30, 0, 10, 100, 10, GREEN)
-	ball = Ball(WIDTH//2, HEIGHT//2, 7, 7, WHITE)
-	webcam = Webcam(0)
+    while running:
+        screen.fill(BLACK)
+        webcam.cap_images()
 
-	# Initial parameters of the players
-	player_score = 0
-	player_YFac = 0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-	while running:
-		screen.fill(BLACK)
-		webcam.cap_images()
-		# Event handling
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				running = False
-			# # For keyboard control
-			# if event.type == pygame.KEYDOWN:
-			# 	if event.key == pygame.K_UP:
-			# 		geek2YFac = -1
-			# 	if event.key == pygame.K_DOWN:
-			# 		geek2YFac = 1
-			# if event.type == pygame.KEYUP:
-			# 	if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-			# 		geek2YFac = 0
-				
-		# Hand gesture controls
-		if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
-			player_YFac = 1
-		elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
-			player_YFac = -1
-		else:
-			player_YFac = 0
+        player_YFac = 0
+        if webcam.y_pos > webcam.im_frame.shape[0] // 2 + move_pixel_buffer:
+            player_YFac = 1
+        elif webcam.y_pos < webcam.im_frame.shape[0] // 2 - move_pixel_buffer:
+            player_YFac = -1
 
-		# Collision detection
-		if pygame.Rect.colliderect(ball.getRect(), paddle.getRect()):
-			ball.hit(paddle.posx)
-			player_score += 1
+        if pygame.Rect.colliderect(ball.getRect(), paddle.getRect()):
+            ball.hit(paddle.posx)
+            player_score += 1
 
-		# Updating the objects
-		paddle.update(player_YFac)
-		point = ball.update()
+        paddle.update(player_YFac)
+        point = ball.update()
 
-		# -1 -> Geek_1 has scored
-		# +1 -> Geek_2 has scored
-		# 0 -> None of them scored
-		if point == -1:
-			if player_score > 0:
-				player_score -= 1
-		elif point == 1:
-			player_score += 1
+        if point == -1:
+            if player_score > 0:
+                player_score -= 1
+        elif point == 1:
+            player_score += 1
 
-		# Someone has scored
-		# a point and the ball is out of bounds.
-		# So, we reset it's position
-		if point: 
-			ball.reset()
+        if point:
+            ball.reset()
 
-		# Displaying the objects on the screen
-		# geek1.display()
-		paddle.display()
-		ball.display()
+        paddle.display()
+        ball.display()
+        paddle.displayScore("Score: ", player_score, WIDTH - 100, 20, WHITE)
 
-		# Displaying the scores of the players
-		# geek1.displayScore("Geek_1 : ", 
-		# 				geek1Score, 100, 20, WHITE)
-		paddle.displayScore("Score : ", 
-						player_score, WIDTH-100, 20, WHITE)
-		img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
-		img.set_colorkey(img.get_colorkey())
-		img = pygame.transform.scale(img, (webcam.im_frame.shape[1]*0.5, webcam.im_frame.shape[0]*0.5))
-		img.set_alpha(overlay_opacity)
-		screen.blit(img,img.get_rect())
+        img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
+        img.set_colorkey(img.get_colorkey())
+        img = pygame.transform.scale(img, (int(webcam.im_frame.shape[1] * 0.5), int(webcam.im_frame.shape[0] * 0.5)))
+        img.set_alpha(overlay_opacity)
+        screen.blit(img, img.get_rect())
 
-		pygame.display.update()
-		
-		clock.tick(FPS)
+        pygame.display.update()
+        clock.tick(FPS)
 
 
 if __name__ == "__main__":
