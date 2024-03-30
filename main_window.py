@@ -96,22 +96,6 @@ class Ball:
 		self.ball = pygame.draw.circle(
 			screen, self.color, (self.posx, self.posy), self.radius)
 
-	# def update(self):
-	# 	self.posx += self.speed*self.xFac
-	# 	self.posy += self.speed*self.yFac
-
-	# 	# If the ball hits the top or bottom surfaces, 
-	# 	# then the sign of yFac is changed and 
-	# 	# it results in a reflection
-	# 	if self.posy <= 0 or self.posy >= HEIGHT:
-	# 		self.yFac *= -1
-	# 	if self.posx <= 0:
-	# 		self.xFac *= -1
-	# 		return 0
-	# 	elif self.posx >= WIDTH:
-	# 		return -1
-	# 	else:
-	# 		return 0
 	def update(self):
 		self.posx += self.speed * self.xFac
 		self.posy += self.speed * self.yFac
@@ -143,91 +127,45 @@ class Ball:
 
 	def getRect(self):
 		return self.ball
-	
+
 class Webcam:
+    def __init__(self, camera_number):
+        self.cap = cv2.VideoCapture(camera_number, cv2.CAP_DSHOW)
+        self.back_sub = cv2.createBackgroundSubtractorMOG2(history=700, varThreshold=25, detectShadows=True)
+        self.kernel = np.ones((20, 20), np.uint8)
+        self.im_frame = None
+        self.max_index = 0
+        self.y_pos = 0
 
-	def __init__(self, camera_number):
-    	# Create a VideoCapture object
-		self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-	
-		# Create the background subtractor object
-		# Use the last 700 video frames to build the background
-		self.back_sub = cv2.createBackgroundSubtractorMOG2(history=700, 
-			varThreshold=25, detectShadows=True)
-	
-		# Create kernel for morphological operation
-		# You can tweak the dimensions of the kernel
-		# e.g. instead of 20,20 you can try 30,30.
-		self.kernel = np.ones((20,20),np.uint8)
-		self.im_frame = self.cap.read()
-		self.max_index = 0
-		self.y_pos = 0
-
-	def cap_images(self):
-		# Capture frame-by-frame
-		# This method returns True/False as well
-		# as the video frame.
-		ret, frame = self.cap.read()
-
-		# Use every frame to calculate the foreground mask and update
-		# the background
-		fg_mask = self.back_sub.apply(frame)
-
-		# Close dark gaps in foreground object using closing
-		fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, self.kernel)
-
-		# Remove salt and pepper noise with a median filter
-		fg_mask = cv2.medianBlur(fg_mask, 5) 
+    def cap_images(self):
+        ret, frame = self.cap.read()
 		
-		# Threshold the image to make it either black or white
-		_, fg_mask = cv2.threshold(fg_mask,127,255,cv2.THRESH_BINARY)
+        fg_mask = self.back_sub.apply(frame)
+        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, self.kernel)
+        fg_mask = cv2.medianBlur(fg_mask, 5) 
+        _, fg_mask = cv2.threshold(fg_mask, 127, 255, cv2.THRESH_BINARY)
 
-		# Find the index of the largest contour and draw bounding box
-		fg_mask_bb = fg_mask
-		contours, hierarchy = cv2.findContours(fg_mask_bb,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)[-2:]
-		areas = [cv2.contourArea(c) for c in contours]
+        contours, _ = cv2.findContours(fg_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if len(contours) < 1:
+            self.im_frame = frame
+        else:
+            areas = [cv2.contourArea(c) for c in contours]
+            self.max_index = np.argmax(areas)
+            cnt = contours[self.max_index]
+            x, y, w, h = cv2.boundingRect(cnt)
+            frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+            x2 = x + int(w / 2)
+            y2 = y + int(h / 2)
+            frame = cv2.circle(frame, (x2, y2), 4, (0, 255, 0), -1)
+            text = "x: " + str(x2) + ", y: " + str(y2)
+            frame = cv2.putText(frame, text, (x2 - 10, y2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            self.im_frame = frame
+            self.y_pos = y2
 
-		# If there are no countours
-		if len(areas) < 1:
-
-			# Display the resulting frame
-			# cv2.imshow('frame',frame):
-				
-			# Go to the top of the while loop
-			self.im_frame = frame
-				
-		else:
-			# Find the largest moving object in the image
-			self.max_index = np.argmax(areas)
-
-			# Draw the bounding box
-			# print(self.max_index)
-			cnt = contours[self.max_index]
-			x,y,w,h = cv2.boundingRect(cnt)
-			frame = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),3)
-
-			# Draw circle in the center of the bounding box
-			x2 = x + int(w/2)
-			y2 = y + int(h/2)
-			frame = cv2.circle(frame,(x2,y2),4,(0,255,0),-1)
-
-			# Print the centroid coordinates (we'll use the center of the
-			# bounding box) on the image
-			text = "x: " + str(x2) + ", y: " + str(y2)
-			# print(text)
-			frame = cv2.putText(frame, text, (x2 - 10, y2 - 10),
-				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-			
-			# Display the resulting frame
-			# cv2.imshow('frame',frame)
-			self.im_frame = frame
-			self.y_pos = y2
-
-	def cam_stop(self):
-		# Close down the video stream
-		self.cap.release()
-		cv2.destroyAllWindows()
-
+    def cam_stop(self):
+        self.cap.release()
+        cv2.destroyAllWindows()
 
 # Game Manager
 def main():
