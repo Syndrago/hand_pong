@@ -1,89 +1,53 @@
-"""
-Hand Pong
-=====
-
-Author: Synclair Chendranaga (Syndrago)
-Email: chendranaga@gmail.com
-"""
-
 import pygame
 import cv2
 import numpy as np
 
-
-pygame.init()
-
-# Font that is used to render the text
-font20 = pygame.font.Font("freesansbold.ttf", 20)
-
-# RGB values of standard colors
+# Constants
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-
-# Basic parameters of the screen
 WIDTH, HEIGHT = 900, 600
+FPS = 30
+move_pixel_buffer = 25
+speed_multiplier = 1.25
+overlay_opacity = 75
+
+
+pygame.init()
+
+# Font
+font20 = pygame.font.Font("freesansbold.ttf", 20)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Hand Pong")
 clock = pygame.time.Clock()
-FPS = 30
 
-# Pixel buffer for neutral hand position
-move_pixel_buffer = 25
-
-# Game settings
-speed_multiplier = 1.25
-overlay_opacity = 75  # Webcam overlay opacity
-
-
-# Paddle class
 class Paddle:
-    # Take the initial position, dimensions, speed and color of the object
-    def __init__(
-        self, posx: int, posy: int, width: int, height: int, speed: float, color: tuple
-    ):
+    def __init__(self, posx, posy, width, height, speed, color):
         self.posx = posx
         self.posy = posy
         self.width = width
         self.height = height
         self.speed = speed
         self.color = color
-        # Rect that is used to control the position and collision of the object
         self.paddle_rect = pygame.Rect(posx, posy, width, height)
-        # Object that is blit on the screen
-        self.paddle_blit = pygame.draw.rect(screen, self.color, self.paddle_rect)
 
-    # Used to display the object on the screen
+    def update(self, yFac):
+        self.posy += self.speed * yFac
+        self.posy = max(0, min(self.posy, HEIGHT - self.height))
+        self.paddle_rect.y = self.posy
+
     def display(self):
-        self.paddle_blit = pygame.draw.rect(screen, self.color, self.paddle_rect)
+        pygame.draw.rect(screen, self.color, self.paddle_rect)
 
-    def update(self, yFac: int):
-        self.posy = self.posy + self.speed * yFac
-
-        # Restricting the Paddle to be below the top surface of the screen
-        if self.posy <= 0:
-            self.posy = 0
-        # Restricting the Paddle to be above the bottom surface of the screen
-        elif self.posy + self.height >= HEIGHT:
-            self.posy = HEIGHT - self.height
-
-        # Updating the rect with the new values
-        self.paddle_rect = (self.posx, self.posy, self.width, self.height)
-
-    def displayScore(self, text, score, x, y, color):
+    def display_score(self, text, score, x, y, color):
         text = font20.render(text + str(score), True, color)
-        textRect = text.get_rect()
-        textRect.center = (x, y)
-
+        textRect = text.get_rect(center=(x, y))
         screen.blit(text, textRect)
 
     def getRect(self):
         return self.paddle_rect
 
 
-# Ball class
 class Ball:
     def __init__(self, posx, posy, radius, speed, color):
         self.posx = posx
@@ -93,14 +57,6 @@ class Ball:
         self.color = color
         self.xFac = 1
         self.yFac = -1
-        self.ball = pygame.draw.circle(
-            screen, self.color, (self.posx, self.posy), self.radius
-        )
-
-    def display(self):
-        self.ball = pygame.draw.circle(
-            screen, self.color, (self.posx, self.posy), self.radius
-        )
 
     def update(self):
         self.posx += self.speed * self.xFac
@@ -122,25 +78,22 @@ class Ball:
         self.xFac *= -1
         self.speed = 7
 
-    # Used to reflect the ball along the X-axis
     def hit(self, paddle_xpos):
         self.speed *= speed_multiplier
-        # Reflect ball in Y if ball hits Paddle corner
-        if paddle_xpos < self.posx:
-            self.yFac *= -1
-        else:
-            self.xFac *= -1
+        self.yFac *= -1 if paddle_xpos < self.posx else 1
+        self.xFac *= -1
+
+    def display(self):
+        pygame.draw.circle(screen, self.color, (self.posx, self.posy), self.radius)
 
     def getRect(self):
-        return self.ball
+        return pygame.Rect(self.posx - self.radius, self.posy - self.radius, 2 * self.radius, 2 * self.radius)
 
 
 class Webcam:
     def __init__(self, camera_number):
         self.cap = cv2.VideoCapture(camera_number, cv2.CAP_DSHOW)
-        self.back_sub = cv2.createBackgroundSubtractorMOG2(
-            history=700, varThreshold=25, detectShadows=True
-        )
+        self.back_sub = cv2.createBackgroundSubtractorMOG2(history=700, varThreshold=25, detectShadows=True)
         self.kernel = np.ones((20, 20), np.uint8)
         self.im_frame = None
         self.max_index = 0
@@ -158,7 +111,7 @@ class Webcam:
 
         if len(contours) < 1:
             self.im_frame = frame
-            self.y_pos = self.im_frame.shape[0]//2
+            self.y_pos = self.im_frame.shape[0] // 2
         else:
             areas = [cv2.contourArea(c) for c in contours]
             self.max_index = np.argmax(areas)
@@ -169,15 +122,7 @@ class Webcam:
             y2 = y + int(h / 2)
             frame = cv2.circle(frame, (x2, y2), 4, (0, 255, 0), -1)
             text = "x: " + str(x2) + ", y: " + str(y2)
-            frame = cv2.putText(
-                frame,
-                text,
-                (x2 - 10, y2 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 255, 0),
-                2,
-            )
+            frame = cv2.putText(frame, text, (x2 - 10, y2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             self.im_frame = frame
             self.y_pos = y2
 
@@ -186,7 +131,6 @@ class Webcam:
         cv2.destroyAllWindows()
 
 
-# Game Manager
 def main():
     running = True
     paddle = Paddle(WIDTH - 30, 0, 10, 100, 10, GREEN)
@@ -209,7 +153,7 @@ def main():
         elif webcam.y_pos < webcam.im_frame.shape[0] // 2 - move_pixel_buffer:
             player_YFac = -1
 
-        if pygame.Rect.colliderect(ball.getRect(), paddle.getRect()):
+        if ball.getRect().colliderect(paddle.getRect()):
             ball.hit(paddle.posx)
             player_score += 1
 
@@ -227,13 +171,12 @@ def main():
 
         paddle.display()
         ball.display()
-        paddle.displayScore("Score: ", player_score, WIDTH - 100, 20, WHITE)
+        paddle.display_score("Score: ", player_score, WIDTH - 100, 20, WHITE)
 
         img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
         img.set_colorkey(img.get_colorkey())
         img = pygame.transform.scale(
-            img,
-            (int(webcam.im_frame.shape[1] * 0.5), int(webcam.im_frame.shape[0] * 0.5)),
+            img, (int(webcam.im_frame.shape[1] * 0.5), int(webcam.im_frame.shape[0] * 0.5))
         )
         img.set_alpha(overlay_opacity)
         screen.blit(img, img.get_rect())
@@ -241,7 +184,9 @@ def main():
         pygame.display.update()
         clock.tick(FPS)
 
+    webcam.cam_stop()
+    pygame.quit()
+
 
 if __name__ == "__main__":
     main()
-    pygame.quit()
