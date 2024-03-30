@@ -1,6 +1,15 @@
+"""
+Hand Pong
+=====
+
+Author: Synclair Chendranaga (Syndrago)
+Email: chendranaga@gmail.com
+"""
+
 import pygame
-import cv2 # Import the OpenCV library
-import numpy as np # Import Numpy library
+import cv2
+import numpy as np
+
 
 pygame.init()
 
@@ -18,18 +27,20 @@ BLUE = (0, 0, 255)
 WIDTH, HEIGHT = 900, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Hand Pong")
-move_pixel_buffer = 25
-overlay_opacity = 75
-
 clock = pygame.time.Clock() 
 FPS = 30
 
-# Striker class
+# Pixel buffer for neutral hand position
+move_pixel_buffer = 25
 
+# Game settings
+speed_multiplier = 1.25
+overlay_opacity = 75 # Webcam overlay opacity
 
-class Striker:
+# Paddle class
+class Paddle:
 		# Take the initial position, dimensions, speed and color of the object
-	def __init__(self, posx, posy, width, height, speed, color):
+	def __init__(self, posx:int, posy:int, width:int, height:int, speed:float, color:tuple):
 		self.posx = posx
 		self.posy = posy
 		self.width = width
@@ -37,26 +48,26 @@ class Striker:
 		self.speed = speed
 		self.color = color
 		# Rect that is used to control the position and collision of the object
-		self.geekRect = pygame.Rect(posx, posy, width, height)
+		self.paddle_rect = pygame.Rect(posx, posy, width, height)
 		# Object that is blit on the screen
-		self.geek = pygame.draw.rect(screen, self.color, self.geekRect)
+		self.paddle_blit = pygame.draw.rect(screen, self.color, self.paddle_rect)
 
 	# Used to display the object on the screen
 	def display(self):
-		self.geek = pygame.draw.rect(screen, self.color, self.geekRect)
+		self.paddle_blit = pygame.draw.rect(screen, self.color, self.paddle_rect)
 
-	def update(self, yFac):
+	def update(self, yFac:int):
 		self.posy = self.posy + self.speed*yFac
 
-		# Restricting the striker to be below the top surface of the screen
+		# Restricting the Paddle to be below the top surface of the screen
 		if self.posy <= 0:
 			self.posy = 0
-		# Restricting the striker to be above the bottom surface of the screen
+		# Restricting the Paddle to be above the bottom surface of the screen
 		elif self.posy + self.height >= HEIGHT:
 			self.posy = HEIGHT-self.height
 
 		# Updating the rect with the new values
-		self.geekRect = (self.posx, self.posy, self.width, self.height)
+		self.paddle_rect = (self.posx, self.posy, self.width, self.height)
 
 	def displayScore(self, text, score, x, y, color):
 		text = font20.render(text+str(score), True, color)
@@ -66,11 +77,9 @@ class Striker:
 		screen.blit(text, textRect)
 
 	def getRect(self):
-		return self.geekRect
+		return self.paddle_rect
 
 # Ball class
-
-
 class Ball:
 	def __init__(self, posx, posy, radius, speed, color):
 		self.posx = posx
@@ -87,23 +96,35 @@ class Ball:
 		self.ball = pygame.draw.circle(
 			screen, self.color, (self.posx, self.posy), self.radius)
 
-	def update(self):
-		self.posx += self.speed*self.xFac
-		self.posy += self.speed*self.yFac
+	# def update(self):
+	# 	self.posx += self.speed*self.xFac
+	# 	self.posy += self.speed*self.yFac
 
-		# If the ball hits the top or bottom surfaces, 
-		# then the sign of yFac is changed and 
-		# it results in a reflection
-		if self.posy <= 0 or self.posy >= HEIGHT:
+	# 	# If the ball hits the top or bottom surfaces, 
+	# 	# then the sign of yFac is changed and 
+	# 	# it results in a reflection
+	# 	if self.posy <= 0 or self.posy >= HEIGHT:
+	# 		self.yFac *= -1
+	# 	if self.posx <= 0:
+	# 		self.xFac *= -1
+	# 		return 0
+	# 	elif self.posx >= WIDTH:
+	# 		return -1
+	# 	else:
+	# 		return 0
+	def update(self):
+		self.posx += self.speed * self.xFac
+		self.posy += self.speed * self.yFac
+
+		if self.posy <= self.radius or self.posy >= (HEIGHT - self.radius):
 			self.yFac *= -1
-		if self.posx <= 0:
+		if self.posx <= self.radius:
 			self.xFac *= -1
 			return 0
-		elif self.posx >= WIDTH:
+		elif self.posx >= (WIDTH - self.radius):
 			return -1
 		else:
 			return 0
-		
 
 	def reset(self):
 		self.posx = WIDTH//2
@@ -112,10 +133,10 @@ class Ball:
 		self.speed = 7
 
 	# Used to reflect the ball along the X-axis
-	def hit(self, striker_xpos):
-		self.speed += 1.5
-		# Reflect ball in Y if ball hits striker corner
-		if striker_xpos < self.posx:
+	def hit(self, paddle_xpos):
+		self.speed *= speed_multiplier
+		# Reflect ball in Y if ball hits Paddle corner
+		if paddle_xpos < self.posx:
 			self.yFac *= -1
 		else:
 			self.xFac *= -1
@@ -125,8 +146,8 @@ class Ball:
 	
 class Webcam:
 
-	def __init__(self):
-    # Create a VideoCapture object
+	def __init__(self, camera_number):
+    	# Create a VideoCapture object
 		self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 	
 		# Create the background subtractor object
@@ -143,8 +164,6 @@ class Webcam:
 		self.y_pos = 0
 
 	def cap_images(self):
- 
-
 		# Capture frame-by-frame
 		# This method returns True/False as well
 		# as the video frame.
@@ -215,18 +234,13 @@ def main():
 	running = True
 
 	# Defining the objects
-	# geek1 = Striker(20, 0, 10, 100, 10, GREEN)
-	geek2 = Striker(WIDTH-30, 0, 10, 100, 10, GREEN)
+	paddle = Paddle(WIDTH-30, 0, 10, 100, 10, GREEN)
 	ball = Ball(WIDTH//2, HEIGHT//2, 7, 7, WHITE)
-	webcam = Webcam()
-
-	# listOfGeeks = [geek1, geek2]
-	listOfGeeks = [geek2]
+	webcam = Webcam(0)
 
 	# Initial parameters of the players
-	# geek1Score, geek2Score = 0, 0
-	geek2Score = 0
-	geek2YFac = 0
+	player_score = 0
+	player_YFac = 0
 
 	while running:
 		screen.fill(BLACK)
@@ -247,30 +261,29 @@ def main():
 				
 		# Hand gesture controls
 		if webcam.y_pos > webcam.im_frame.shape[0]//2 + move_pixel_buffer:
-			geek2YFac = 1
+			player_YFac = 1
 		elif webcam.y_pos < webcam.im_frame.shape[0]//2 - move_pixel_buffer:
-			geek2YFac = -1
+			player_YFac = -1
 		else:
-			geek2YFac = 0
+			player_YFac = 0
 
 		# Collision detection
-		for geek in listOfGeeks:
-			if pygame.Rect.colliderect(ball.getRect(), geek.getRect()):
-				ball.hit(geek.posx)
-				geek2Score += 1
+		if pygame.Rect.colliderect(ball.getRect(), paddle.getRect()):
+			ball.hit(paddle.posx)
+			player_score += 1
 
 		# Updating the objects
-		geek2.update(geek2YFac)
+		paddle.update(player_YFac)
 		point = ball.update()
 
 		# -1 -> Geek_1 has scored
 		# +1 -> Geek_2 has scored
 		# 0 -> None of them scored
 		if point == -1:
-			if geek2Score > 0:
-				geek2Score -= 1
+			if player_score > 0:
+				player_score -= 1
 		elif point == 1:
-			geek2Score += 1
+			player_score += 1
 
 		# Someone has scored
 		# a point and the ball is out of bounds.
@@ -280,14 +293,14 @@ def main():
 
 		# Displaying the objects on the screen
 		# geek1.display()
-		geek2.display()
+		paddle.display()
 		ball.display()
 
 		# Displaying the scores of the players
 		# geek1.displayScore("Geek_1 : ", 
 		# 				geek1Score, 100, 20, WHITE)
-		geek2.displayScore("Score : ", 
-						geek2Score, WIDTH-100, 20, WHITE)
+		paddle.displayScore("Score : ", 
+						player_score, WIDTH-100, 20, WHITE)
 		img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
 		img.set_colorkey(img.get_colorkey())
 		img = pygame.transform.scale(img, (webcam.im_frame.shape[1]*0.5, webcam.im_frame.shape[0]*0.5))
