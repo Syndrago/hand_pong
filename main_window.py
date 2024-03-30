@@ -158,6 +158,7 @@ class Webcam:
 
         if len(contours) < 1:
             self.im_frame = frame
+            self.y_pos = self.im_frame.shape[0]//2
         else:
             areas = [cv2.contourArea(c) for c in contours]
             self.max_index = np.argmax(areas)
