@@ -11,6 +11,8 @@ font20 = pygame.font.Font('freesansbold.ttf', 20)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
 # Basic parameters of the screen
 WIDTH, HEIGHT = 900, 600
@@ -125,7 +127,7 @@ class Webcam:
 
 	def __init__(self):
     # Create a VideoCapture object
-		self.cap = cv2.VideoCapture(0)
+		self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 	
 		# Create the background subtractor object
 		# Use the last 700 video frames to build the background
