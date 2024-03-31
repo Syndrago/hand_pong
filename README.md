@@ -34,6 +34,8 @@ Instead of having the paddle position be interpolated from the hand position on 
 
 I also decided to make the ball speed increase by a multiplier every time the ball as an added challenge in exchange for the faster paddles.
 
+Sound effects play when the ball hits the paddle and when the player loses a point.
+
 ## Resources
 * https://en.wikipedia.org/wiki/Foreground_detection#Background_subtraction
 * https://www.pygame.org/

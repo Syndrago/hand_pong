@@ -1,9 +1,18 @@
+"""
+Hand Pong
+=====
+
+Author: Synclair Chendranaga
+Email: chendranaga@gmail.com
+"""
+
+# Import libraries
 import pygame
 import cv2
 import numpy as np
 import random
-from playsound import playsound
 import os
+
 
 # Constants
 BLACK = (0, 0, 0)
@@ -11,13 +20,21 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
-color_list = [RED, GREEN, BLUE, WHITE]
 WIDTH, HEIGHT = 900, 600
 FPS = 30
+
+# List of colors for paddle
+color_list = [RED, GREEN, BLUE, WHITE]
+
+# Movement parameters
 move_pixel_buffer = 25
 speed_multiplier = 1.25
+
+# Webcam parameters
+camera_number = 0
 overlay_opacity = 75
 
+# Script directory and sound paths
 script_dir = os.path.dirname(__file__)
 beep_path = "beep.wav"
 bounce_path = "bounce.wav"
@@ -33,8 +50,23 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Hand Pong")
 clock = pygame.time.Clock()
 
+
 class Paddle:
+    """
+    Class representing the paddle in the game.
+    """
     def __init__(self, posx, posy, width, height, speed, color):
+        """
+        Initialize paddle attributes.
+
+        Args:
+            posx (int): X-coordinate of the paddle.
+            posy (int): Y-coordinate of the paddle.
+            width (int): Width of the paddle.
+            height (int): Height of the paddle.
+            speed (int): Speed of the paddle.
+            color (tuple): Color of the paddle.
+        """
         self.posx = posx
         self.posy = posy
         self.width = width
@@ -44,24 +76,62 @@ class Paddle:
         self.paddle_rect = pygame.Rect(posx, posy, width, height)
 
     def update(self, yFac):
+        """
+        Update the position of the paddle based on yFac.
+
+        Args:
+            yFac (int): Factor to determine direction of movement.
+        """
         self.posy += self.speed * yFac
         self.posy = max(0, min(self.posy, HEIGHT - self.height))
         self.paddle_rect.y = self.posy
 
     def display(self):
+        """
+        Display the paddle on the screen.
+        """
         pygame.draw.rect(screen, self.color, self.paddle_rect)
 
     def display_score(self, text, score, x, y, color):
+        """
+        Display the score on the screen.
+
+        Args:
+            text (str): Text to display.
+            score (int): Score value.
+            x (int): X-coordinate of the text.
+            y (int): Y-coordinate of the text.
+            color (tuple): Color of the text.
+        """
         text = font20.render(text + str(score), True, color)
         textRect = text.get_rect(center=(x, y))
         screen.blit(text, textRect)
 
     def getRect(self):
+        """
+        Get the rect object representing the paddle.
+
+        Returns:
+            Rect: Rect object representing the paddle.
+        """
         return self.paddle_rect
 
 
 class Ball:
+    """
+    Class representing the ball in the game.
+    """
     def __init__(self, posx, posy, radius, speed, color):
+        """
+        Initialize ball attributes.
+
+        Args:
+            posx (int): X-coordinate of the ball.
+            posy (int): Y-coordinate of the ball.
+            radius (int): Radius of the ball.
+            speed (int): Speed of the ball.
+            color (tuple): Color of the ball.
+        """
         self.posx = posx
         self.posy = posy
         self.radius = radius
@@ -71,6 +141,11 @@ class Ball:
         self.yFac = -1
 
     def update(self):
+        """
+        Update the position of the ball.
+
+        Returns point based on ball position.
+        """
         self.posx += self.speed * self.xFac
         self.posy += self.speed * self.yFac
 
@@ -85,6 +160,9 @@ class Ball:
             return 0
 
     def reset(self):
+        """
+        Reset the position and speed of the ball.
+        """
         self.posx = WIDTH // 2
         self.posy = HEIGHT // 2
         self.xFac *= -1
@@ -93,19 +171,43 @@ class Ball:
         pygame.mixer.music.play()
 
     def hit(self, paddle_xpos):
+        """
+        Change the direction and speed of the ball when it hits the paddle.
+
+        Args:
+            paddle_xpos (int): X-coordinate of the paddle.
+        """
         self.speed *= speed_multiplier
         self.yFac *= -1 if paddle_xpos < self.posx else 1
         self.xFac *= -1
 
     def display(self):
+        """
+        Display the ball on the screen.
+        """
         pygame.draw.circle(screen, self.color, (self.posx, self.posy), self.radius)
 
     def getRect(self):
+        """
+        Get the rect object representing the ball.
+
+        Returns:
+            Rect: Rect object representing the ball.
+        """
         return pygame.Rect(self.posx - self.radius, self.posy - self.radius, 2 * self.radius, 2 * self.radius)
 
 
 class Webcam:
+    """
+    Class representing the webcam for capturing hand gestures.
+    """
     def __init__(self, camera_number):
+        """
+        Initialize webcam attributes.
+
+        Args:
+            camera_number (int): Camera number for capturing video.
+        """
         self.cap = cv2.VideoCapture(camera_number, cv2.CAP_DSHOW)
         self.back_sub = cv2.createBackgroundSubtractorMOG2(history=700, varThreshold=25, detectShadows=True)
         self.kernel = np.ones((20, 20), np.uint8)
@@ -114,6 +216,9 @@ class Webcam:
         self.y_pos = 0
 
     def cap_images(self):
+        """
+        Capture images from the webcam and process them.
+        """
         ret, frame = self.cap.read()
 
         fg_mask = self.back_sub.apply(frame)
@@ -141,15 +246,21 @@ class Webcam:
             self.y_pos = y2
 
     def cam_stop(self):
+        """
+        Stop the webcam.
+        """
         self.cap.release()
         cv2.destroyAllWindows()
 
 
 def main():
+    """
+    Main function to run the game.
+    """
     running = True
     paddle = Paddle(WIDTH - 30, 0, 10, 100, 10, GREEN)
     ball = Ball(WIDTH // 2, HEIGHT // 2, 7, 7, WHITE)
-    webcam = Webcam(0)
+    webcam = Webcam(camera_number)
     player_score = 0
     player_YFac = 0
 
