@@ -36,8 +36,8 @@ overlay_opacity = 75
 
 # Script directory and sound paths
 script_dir = os.path.dirname(__file__)
-beep_path = "beep.wav"
-bounce_path = "bounce.wav"
+beep_path = "sounds/beep.wav"
+bounce_path = "sounds/bounce.wav"
 beep_abs_path = os.path.join(script_dir, beep_path)
 bounce_abs_path = os.path.join(script_dir, bounce_path)
 
