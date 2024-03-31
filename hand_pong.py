@@ -2,6 +2,8 @@ import pygame
 import cv2
 import numpy as np
 import random
+from playsound import playsound
+import os
 
 # Constants
 BLACK = (0, 0, 0)
@@ -16,8 +18,14 @@ move_pixel_buffer = 25
 speed_multiplier = 1.25
 overlay_opacity = 75
 
+script_dir = os.path.dirname(__file__)
+beep_path = "beep.wav"
+bounce_path = "bounce.wav"
+beep_abs_path = os.path.join(script_dir, beep_path)
+bounce_abs_path = os.path.join(script_dir, bounce_path)
 
 pygame.init()
+pygame.mixer.init()
 
 # Font
 font20 = pygame.font.Font("freesansbold.ttf", 20)
@@ -81,6 +89,8 @@ class Ball:
         self.posy = HEIGHT // 2
         self.xFac *= -1
         self.speed = 7
+        pygame.mixer.music.load(beep_abs_path)
+        pygame.mixer.music.play()
 
     def hit(self, paddle_xpos):
         self.speed *= speed_multiplier
@@ -163,6 +173,8 @@ def main():
 
         if ball.getRect().colliderect(paddle.getRect()):
             ball.hit(paddle.posx)
+            pygame.mixer.music.load(bounce_abs_path)
+            pygame.mixer.music.play()
             paddle.color = random.choice(color_list)
             player_score += 1
 
