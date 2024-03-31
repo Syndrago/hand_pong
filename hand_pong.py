@@ -1,11 +1,15 @@
 import pygame
 import cv2
 import numpy as np
+import random
 
 # Constants
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+color_list = [RED, GREEN, BLUE, WHITE]
 WIDTH, HEIGHT = 900, 600
 FPS = 30
 move_pixel_buffer = 25
@@ -159,6 +163,7 @@ def main():
 
         if ball.getRect().colliderect(paddle.getRect()):
             ball.hit(paddle.posx)
+            paddle.color = random.choice(color_list)
             player_score += 1
 
         paddle.update(player_YFac)
