@@ -148,8 +148,12 @@ def main():
                 running = False
 
         player_YFac = 0
-        if webcam.y_pos > webcam.im_frame.shape[0] // 2 + move_pixel_buffer:
+        if webcam.y_pos >= webcam.im_frame.shape[0] - move_pixel_buffer*3:
+            player_YFac = 2
+        elif webcam.y_pos > webcam.im_frame.shape[0] // 2 + move_pixel_buffer:
             player_YFac = 1
+        elif webcam.y_pos <= move_pixel_buffer*3:
+            player_YFac = -2
         elif webcam.y_pos < webcam.im_frame.shape[0] // 2 - move_pixel_buffer:
             player_YFac = -1
 
