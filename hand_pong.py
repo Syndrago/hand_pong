@@ -172,9 +172,8 @@ def main():
         paddle.display()
         ball.display()
         paddle.display_score("Score: ", player_score, WIDTH - 100, 20, WHITE)
-
-        img = pygame.pixelcopy.make_surface(np.swapaxes(webcam.im_frame, 0, 1))
-        img.set_colorkey(img.get_colorkey())
+        rgb_frame = cv2.cvtColor(webcam.im_frame, cv2.COLOR_BGR2RGB)
+        img = pygame.pixelcopy.make_surface(np.swapaxes(rgb_frame, 0, 1))
         img = pygame.transform.scale(
             img, (int(webcam.im_frame.shape[1] * 0.5), int(webcam.im_frame.shape[0] * 0.5))
         )
